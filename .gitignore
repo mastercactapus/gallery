@@ -2,4 +2,4 @@ public/bundle.js
 gallery
 node_modules
 *.bolt
-
+upload/
