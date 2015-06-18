@@ -93,6 +93,9 @@ class BucketEditor extends React.Component {
 			</div>
 		}
 
+		var images = _.map(this.props.bucket.Images, img=>{
+			return <div className="box"><img src={img.SmallThumbnail.Filename}></img></div>
+		})
 
 		return <div className="editBucket">
 			<div className="row">
@@ -108,7 +111,12 @@ class BucketEditor extends React.Component {
 					</div>
 				</div>
 				<div className="col-xs imgs">
-					<div className="row start-xs"><div className="box">Images</div></div>
+					<div className="row start-xs">
+						<div className="row">Images</div>
+						<div className="row">
+							{images}
+						</div>
+					</div>
 					<div className="row">
 						<Upload bucketId={this.state.ID}/>
 					</div>

@@ -12,16 +12,46 @@ var configDir = "config"
 
 var db *bolt.DB
 
+func getID() (int32, error) {
+	var id int32
+	err := db.Update(func(tx *bolt.Tx) error {
+		id = getIDTx(tx)
+		return nil
+	})
+	return id, err
+}
+func getIDTx(tx *bolt.Tx) int32 {
+	var id int32
+	bk := tx.Bucket([]byte("core"))
+	dat := bk.Get([]byte("idx"))
+	if len(dat) > 0 {
+		id = btoi(dat)
+	}
+	if id < 10000 {
+		id = 10000
+	}
+	bk.Put([]byte("idx"), itob(id+1))
+	return id
+}
+
 func initBuckets(tx *bolt.Tx) error {
-	_, err := tx.CreateBucketIfNotExists([]byte("page"))
+	_, err := tx.CreateBucketIfNotExists([]byte("core"))
 	if err != nil {
 		return err
 	}
-	_, err = tx.CreateBucketIfNotExists([]byte("buckets"))
+	_, err = tx.CreateBucketIfNotExists([]byte(pageBucket))
 	if err != nil {
 		return err
 	}
-	_, err = tx.CreateBucketIfNotExists([]byte("images"))
+	_, err = tx.CreateBucketIfNotExists([]byte(bucketBucket))
+	if err != nil {
+		return err
+	}
+	_, err = tx.CreateBucketIfNotExists([]byte(imageBucket))
+	if err != nil {
+		return err
+	}
+	_, err = tx.CreateBucketIfNotExists([]byte(imageFileBucket))
 	if err != nil {
 		return err
 	}
@@ -42,5 +72,7 @@ func main() {
 	r.Methods("POST").Path("/admin/upload/{bucket}").HandlerFunc(HttpUploadToBucket)
 	r.Methods("POST").Path("/admin/buckets").HandlerFunc(HttpCreateBucket)
 	r.Methods("GET").Path("/admin/buckets").HandlerFunc(HttpGetBuckets)
+	updir := http.FileServer(http.Dir("upload"))
+	r.Methods("GET").PathPrefix("/upload").Handler(http.StripPrefix("/upload/", updir))
 	http.ListenAndServe(":8000", handlers.LoggingHandler(os.Stdout, r))
 }

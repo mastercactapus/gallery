@@ -15,7 +15,8 @@ module.exports = {
 	},
 	devServer: {
 		proxy: {
-			"/admin/*": "http://127.0.0.1:8000"
+			"/admin/*": "http://127.0.0.1:8000",
+			"/upload/*": "http://127.0.0.1:8000"
 		}
 	},
 };
