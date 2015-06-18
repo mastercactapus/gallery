@@ -1,0 +1,44 @@
+@import "~flexboxgrid/dist/flexboxgrid.css";
+
+.editBucket {
+    border-style: solid;
+    border-width: thin;
+    border-color: grey;
+    padding: 1em;
+    color: grey;
+    font-size: 24px;
+}
+.editBucket .imgs {
+    padding-left: 1em;
+}
+.editBucket .error {
+    color: red;
+}
+
+.uploadbox {
+    border-style: dashed;
+    border-width: thick;
+    border-color: grey;
+    padding: 8px;
+    min-width: 100px;
+    min-height: 100px;
+    font-size: 24px;
+    text-align: center;
+    color: grey;
+    cursor:default;
+}
+.uploadbox.error {
+    color: red;
+    border-color: red;
+    border-style: solid;
+}
+.uploadbox .fyi {
+    font-size: 16px;
+    color: red;
+}
+
+.uploadbox.hover {
+    border-color: green;
+    background: #dfd;
+    color:green;
+}
