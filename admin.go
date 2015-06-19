@@ -130,3 +130,37 @@ func HttpGetBuckets(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&b)
 }
+
+func HttpGetBucket(w http.ResponseWriter, req *http.Request) {
+	l := log.WithFields(log.Fields{
+		"Path":       req.RequestURI,
+		"Method":     req.Method,
+		"RemoteAddr": req.RemoteAddr,
+	})
+	bad := func(status int, msg string, err error) {
+		e := fmt.Sprintf("error: %s: %s", msg, err.Error())
+		l.Errorln(e)
+		io.WriteString(w, e)
+		w.WriteHeader(status)
+	}
+
+	bucket := mux.Vars(req)["bucket"]
+	id, err := strconv.Atoi(bucket)
+	if err != nil {
+		bad(400, "bucket not a number", err)
+		return
+	}
+
+	bkt := new(BucketConfig)
+	bkt.ID = int32(id)
+	err = db.View(bkt.Load)
+	if err != nil {
+		bad(400, "failed to get bucket", err)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(bkt)
+	if err != nil {
+		bad(500, "failed to encode json", err)
+	}
+}

@@ -7,10 +7,11 @@ module.exports = {
 
 	module: {
 		loaders: [
-			{ test: /\.css$/, loader: "style-loader!css-loader" },
-			{ test: /browser\/.*\.jsx?$/, loader: "babel-loader", exclude: /(node_modules)/ },
-			{ test: /node_modules\/.*\.jsx$/, loader: "babel-loader"},
-			{ test: /\.(svg|eot|woff2?|ttf|png|gif)$/, loader: "url-loader" }
+			{ test: /\.css$/, loader: "style!css" },
+			{ test: /\.scss$/, loader: "style!css!sass" },
+			{ test: /browser\/.*\.jsx?$/, loader: "babel", exclude: /(node_modules)/ },
+			{ test: /node_modules\/.*\.jsx$/, loader: "babel"},
+			{ test: /\.(svg|eot|woff2?|ttf|png|gif)$/, loader: "url" }
 		],
 	},
 	devServer: {

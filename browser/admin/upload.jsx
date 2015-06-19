@@ -88,7 +88,8 @@ export default class Uploader extends React.Component {
 		return Bluebird.each(files, this.uploadFile.bind(this))
 		.then(() =>{
 			this.setState({uploading: false});
-		});
+		})
+		.finally(this.props.updateCb);
 	}
 
 	drop(e) {

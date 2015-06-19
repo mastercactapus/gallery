@@ -58,6 +58,7 @@ func initBuckets(tx *bolt.Tx) error {
 	return nil
 }
 func main() {
+	_ = "breakpoint"
 	var err error
 	db, err = bolt.Open("config.bolt", 0644, nil)
 	if err != nil {
@@ -72,6 +73,7 @@ func main() {
 	r.Methods("POST").Path("/admin/upload/{bucket}").HandlerFunc(HttpUploadToBucket)
 	r.Methods("POST").Path("/admin/buckets").HandlerFunc(HttpCreateBucket)
 	r.Methods("GET").Path("/admin/buckets").HandlerFunc(HttpGetBuckets)
+	r.Methods("GET").Path("/admin/buckets/{bucket}").HandlerFunc(HttpGetBucket)
 	updir := http.FileServer(http.Dir("upload"))
 	r.Methods("GET").PathPrefix("/upload").Handler(http.StripPrefix("/upload/", updir))
 	http.ListenAndServe(":8000", handlers.LoggingHandler(os.Stdout, r))

@@ -39,7 +39,7 @@ export default class Buckets extends React.Component {
 
 	render() {
 		var editors = _.map(this.state.buckets, bucket=>{
-			return <div className="row"><BucketEditor bucket={bucket} key={bucket.id} /></div>
+			return <div key={bucket.ID} className="row"><BucketEditor bucket={bucket} /></div>
 		});
 
 		return <div>
@@ -76,6 +76,13 @@ class BucketEditor extends React.Component {
 		})
 	}
 
+	update() {
+		return request.getAsync({uri: "admin/buckets/" + encodeURIComponent(this.state.ID), json:true})
+		.spread((res,body)=>{
+			this.setState(body);
+		});
+	}
+
 	render() {
 		if (!this.props.bucket) {
 			return <div className="editBucket">
@@ -93,8 +100,8 @@ class BucketEditor extends React.Component {
 			</div>
 		}
 
-		var images = _.map(this.props.bucket.Images, img=>{
-			return <div className="box"><img src={img.SmallThumbnail.Filename}></img></div>
+		var images = _.map(this.state.Images, img=>{
+			return <div key={img.ID} className="box bucketImage"><img src={img.SmallThumbnail.Filename}></img></div>
 		})
 
 		return <div className="editBucket">
@@ -118,7 +125,7 @@ class BucketEditor extends React.Component {
 						</div>
 					</div>
 					<div className="row">
-						<Upload bucketId={this.state.ID}/>
+						<Upload bucketId={this.state.ID} updateCb={this.update.bind(this)}/>
 					</div>
 					<ul></ul>
 				</div>
