@@ -1,9 +1,13 @@
 import React from "react";
+import remote from "./remote";
+import Bluebird from "bluebird";
+import request from "browser-request";
+Bluebird.promisifyAll(request);
 
 export default class ImageEditor extends React.Component {
     constructor(props) {
         super(props)
-        this.state = {};
+        this.state = this.props.Image;
     }
 
     confirmDelete(e) {
@@ -18,8 +22,15 @@ export default class ImageEditor extends React.Component {
 
     }
 
+    shouldComponentUpdate(nextProps, nextState) {
+        var props = ["Enabled", "Name", "confirm", "Caption", "ID"];
+        var cmp = (prop)=>{
+            return this.state[prop] === nextState[prop];
+        };
+        return !_.all(props, cmp);
+    }
+
     render() {
-        var src = "upload/" + this.props.ID + ".smthumb.jpg";
         if (this.state.confirm) {
             return <div onMouseLeave={this.cancelDelete.bind(this)} className="box bucketImage">
                 Are you sure you want to delete this image?
@@ -30,7 +41,7 @@ export default class ImageEditor extends React.Component {
         }
 
         var style = {
-            "background-color": this.state.Enabled?"#cce":"#ccc",
+            backgroundColor: this.state.Enabled?"#cce":"#ccc",
             border: "4px solid " + (this.state.Enabled?"#aac":"#aaa"),
         };
 
@@ -45,7 +56,7 @@ export default class ImageEditor extends React.Component {
                 </div>
             </div>
             <div className="row">
-                <img draggable="false" src={src}></img>
+                <img draggable="false" src={this.state.SmallThumbnail.Filename}></img>
             </div>
 
             <div className="row"><input placeholder="name" value={this.state.Name} /></div>

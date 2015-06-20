@@ -1,12 +1,26 @@
 
 .sorter {
     min-height: 150px;
-    padding: 1em;
+    padding: 4px;
     border-style: groove;
-
+}
+div.sorter.row {
+    margin-left: 0;
 }
 
 .editBucket {
+    .main-thumbnail {
+        height:200px;
+        width:200px;
+        border: solid 1px grey;
+        img {
+            max-height: 240px;
+            max-width: 240px;
+            height: auto;
+            width: auto;
+        }
+
+    }
     border-style: solid;
     border-width: thin;
     border-color: grey;

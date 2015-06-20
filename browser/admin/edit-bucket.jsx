@@ -104,7 +104,7 @@ class BucketEditor extends React.Component {
 
 		return <div className="editBucket">
 			<div className="row">
-				<div className="">
+				<div className="box">
 					<div>
 						<label>Name<br /><input type="text" value={this.state.Name} /></label>
 					</div>
@@ -119,10 +119,31 @@ class BucketEditor extends React.Component {
 					</div>
 				</div>
 				<div className="col-xs imgs">
-					<div className="row start-xs">
-						<div className="row">Images</div>
-						<div className="row">
-							<Sorter Images={_.pluck(this.state.Images, "ID")} />
+					<div className="row">
+						<div className="box">
+							<div className="row">
+								<div className="box">Thumbnails</div>
+							</div>
+							<div className="row">
+									<div className="box">
+										<div className="main-thumbnail">
+											<img src={this.state.Thumbnail.Filename}></img>
+										</div>
+									</div>
+									<div className="col-xs">
+										<Sorter Rows="2" Images={this.state.SmallThumbnails} />
+									</div>
+							</div>
+							<div className="row">
+								<div className="box">Images</div>
+							</div>
+							<div className="row">
+								<div className="col-xs">
+									<div className="box">
+										<Sorter Edit="true" Images={this.state.Images} />
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
 
