@@ -3,6 +3,7 @@ import _ from "lodash";
 import Bluebird from "bluebird";
 import Upload from "./upload.jsx";
 import request from "browser-request";
+import Sorter from "./sorter.jsx";
 Bluebird.promisifyAll(request);
 
 export default class Buckets extends React.Component {
@@ -100,9 +101,6 @@ class BucketEditor extends React.Component {
 			</div>
 		}
 
-		var images = _.map(this.state.Images, img=>{
-			return <div key={img.ID} className="box bucketImage"><img src={img.SmallThumbnail.Filename}></img></div>
-		})
 
 		return <div className="editBucket">
 			<div className="row">
@@ -116,18 +114,18 @@ class BucketEditor extends React.Component {
 					<div>
 						<label><input type="checkbox" checked={this.state.Enabled?"checked":""} />Enabled</label>
 					</div>
+					<div className="row">
+						<Upload bucketId={this.state.ID} updateCb={this.update.bind(this)}/>
+					</div>
 				</div>
 				<div className="col-xs imgs">
 					<div className="row start-xs">
 						<div className="row">Images</div>
 						<div className="row">
-							{images}
+							<Sorter Images={_.pluck(this.state.Images, "ID")} />
 						</div>
 					</div>
-					<div className="row">
-						<Upload bucketId={this.state.ID} updateCb={this.update.bind(this)}/>
-					</div>
-					<ul></ul>
+
 				</div>
 			</div>
 

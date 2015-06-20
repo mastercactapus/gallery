@@ -3,132 +3,132 @@ import _ from "lodash";
 import ImageEditor from "./edit-image.jsx";
 
 
+function reorder(IDList, fromID, toID) {
+
+}
+
+
 export default class Sorter extends React.Component {
     constructor(props) {
         super(props);
+
         this.state = {
             images: props.Images || [],
-            extDrag: 0,
-            drag: 0,
-            dragID: null
+            dragging: false,
+            draggingID: null,
+            draggingIdx: -1,
+            hovering: false,
+            hoverID: null,
+            hoverIdx: -1,
         };
-        this.drag = 0;
-        this.extDrag = 0;
-        this._dragID = null;
-        this._dragE = {};
+
+        this.dragNum = 0;
     }
 
-    dragID(v) {
-        if (_.isUndefined(v)) {
-            return this._dragID;
-        } else {
-            this._dragID = v;
-            this.setState({
-                dragID: v
-            });
-        }
-    }
-
-    dragDrop(e) {
-        e.preventDefault();
-        if (this.dragID() !== -1) return;
-        var obj = JSON.parse(e.dataTransfer.getData("data"));
-        var img = _.clone(this.state.images);
-        if (_.any(img, {ID: obj.ID})) {
-            this.dragID(null);
-            this.setState({
-                images: _.reject(img, {ID: -1})
-            });
-            return;
-        }
-        var idx = _.findIndex(img, {ID: -1});
-        if (idx > -1) {
-            img[idx] = obj;
-        }
-        this.dragID(null);
+    dragStart(id, i, e) {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("data/imageID", id);
         this.setState({
-            images: img
+            dragging: true,
+            draggingID: id,
+            draggingIdx: i,
         });
     }
-    dragStart(id, e) {
-        this._originalOrder = _.clone(this.state.images);
-        this.dragID(id);
-        e.dataTransfer.setData("data", JSON.stringify(_.find(this.state.images, {ID: id})));
-    }
-    dragEnd(id, e) {
-        this.dragID(null);
+    dragEnd(id, i, e) {
         this.setState({
-            images: _.reject(this.state.images, {ID:-1})
-        })
+            dragging: false,
+            draggingID: null,
+            draggingIdx: -1,
+        });
+    }
+    dragEnter(id, i, e) {
+        e.stopPropagation();
+        e.preventDefault();
+        this.lastEnter = e.target;
+        this.setState({
+            hovering: true,
+            hoverID: id,
+            hoverIdx: i,
+        });
     }
 
     dragExternalEnter(e) {
-        this.extDrag++;
-        this.setState({extDrag: this.extDrag});
-        if (this.extDrag > 1) return;
-
-        if (this.dragID() > 0) {
-            e.dataTransfer.effectAllowed = "move";
-        } else {
-            e.dataTransfer.effectAllowed = "copy";
-            this.dragID(-1);
-            if (!this._origImages) {
-                this._origImages = this.state.images;
-            }
-            this.setState({
-                images: this._origImages.concat({ID: -1})
-            });
-        }
+        e.stopPropagation();
+        e.preventDefault();
+        this.lastEnter = e.target;
+        this.setState({
+            hovering: true,
+        });
     }
 
     dragExternalLeave(e) {
-        this.extDrag--;
-        this.setState({extDrag:this.extDrag});
-        if (this.extDrag>0) return;
-        if (this.dragID() > 0) {
-            this.setState({
-                images: this._originalOrder
-            });
-        } else {
-            this.dragID(null);
-            this.setState({
-                images: this._origImages
-            });
-        }
+        e.stopPropagation();
+        e.preventDefault();
+        if (e.target !== this.lastEnter) return;
+        this.setState({
+            hovering: false,
+            hoverID: null,
+            hoverIdx: -1,
+        });
     }
 
-    dragEnter(id, e) {
-        if (this.dragID() === id) return;
+    dragDrop(e) {
+        e.stopPropagation();
+        e.preventDefault();
         var imgs = _.clone(this.state.images);
-        var a = _.findIndex(imgs, {ID: this.dragID()});
-        var b = _.findIndex(imgs, {ID: id});
-        var drag = imgs[a];
-        if (a > b) { // if after the el; then place before
-            imgs = _.slice(imgs, 0, b).concat(drag, _.chain(imgs).slice(b).reject({ID: this.dragID()}).value());
-        } else { // if before el, then place after
-            imgs = _.chain(imgs).slice(0, b+1).reject({ID: this.dragID()}).value().concat(drag, _.slice(imgs, b+1));
+        if (this.state.dragging) {
+            imgs.splice(this.state.draggingIdx, 1);
+            imgs.splice(this.state.hoverIdx, 0, this.state.draggingID);
+        } else {
+            var id = +e.dataTransfer.getData("data/imageID");
+            if (!_.contains(imgs, id)) {
+                if (this.state.hoverIdx !== -1) { // insert mode
+                    imgs.splice(this.state.hoverIdx, 0, id);
+                } else { // append mode
+                    imgs.push(id);
+                }
+            }
         }
-
-        this.setState({images: imgs});
+        this.setState({
+            images: imgs,
+            hovering: false,
+            dragging: false,
+            hoverID: null,
+            hoverIdx: -1,
+            draggingID: null,
+            draggingIdx: -1,
+        });
     }
-
 
     render() {
-        var images = _.map(this.state.images, (img,i)=>{
+        var imgs = _.clone(this.state.images);
+        if (this.state.hovering && this.state.dragging) { //reorder mode
+            if (this.state.hoverIdx !== -1 && this.state.hoverIdx !== this.state.draggingIdx) { //non zero
+                imgs.splice(this.state.draggingIdx, 1);
+                imgs.splice(this.state.hoverIdx, 0, this.state.draggingID);
+            }
+        } else if (this.state.hovering && this.state.hoverIdx !== -1) { // insert mode
+            imgs.splice(this.state.hoverIdx, 0, 0);
+        } else if (this.state.hovering) { // append mode
+            imgs.push(0);
+        }
+
+        var images = _.map(imgs, (img,i)=>{
             var c = "box sortable" ;
-            if (img.ID === this.state.dragID && this.state.extDrag>0) {
+            if (img===0 || (img === this.state.draggingID && this.state.hovering)) {
                 c+=" dragging";
             }
 
-            var editor = img.ID === -1 ? <div className="box bucketImage drag-copy"></div> : <ImageEditor ID={img.ID} src={img.Filename} />;
+            var editor = img === 0 ? <div className="box bucketImage drag-copy"></div> : <ImageEditor ID={img} />;
 
             return <div className={c}
-                onDragEnd={this.dragEnd.bind(this, img.ID)}
-                onDragStart={this.dragStart.bind(this, img.ID)}
-                onDragEnter={this.dragEnter.bind(this, img.ID)}
+                onDragEnd={this.dragEnd.bind(this, img, i)}
+                onDragStart={this.dragStart.bind(this, img, i)}
+                onDragEnter={this.dragEnter.bind(this, img, i)}
                 onDrop={this.dragDrop.bind(this)}
-                key={img.ID} draggable="true">{editor}</div>
+                key={img} draggable="true">{editor}</div>
         });
+
 
         return <div data-top="true"
             onDragEnter={this.dragExternalEnter.bind(this)}

@@ -128,7 +128,7 @@ export default class Uploader extends React.Component {
 			</div>
 		} else {
 			return <div className="uploadbox" onDragOver={this.dragOver.bind(this)} onDragLeave={this.dragLeave.bind(this)} onDrop={this.drop.bind(this)}>
-				Drop image(s) here to add
+				Drag image(s)<br />here to upload
 			</div>
 		}
 	}
