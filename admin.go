@@ -173,6 +173,42 @@ func HttpUpdateImage(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(204)
 }
 
+func HttpUpdateBucket(w http.ResponseWriter, req *http.Request) {
+	l := log.WithFields(log.Fields{
+		"Path":       req.RequestURI,
+		"Method":     req.Method,
+		"RemoteAddr": req.RemoteAddr,
+	})
+	bad := func(status int, msg string, err error) {
+		e := fmt.Sprintf("error: %s: %s", msg, err.Error())
+		l.Errorln(e)
+		io.WriteString(w, e)
+		w.WriteHeader(status)
+	}
+	idStr := mux.Vars(req)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		bad(400, "invalid id", err)
+		return
+	}
+	bucket := new(BucketConfig)
+	err = json.NewDecoder(req.Body).Decode(bucket)
+	if err != nil {
+		bad(400, "invalid json", err)
+		return
+	}
+	if int32(id) != bucket.ID {
+		bad(400, "id mismatch", fmt.Errorf("expected id numbers to match"))
+		return
+	}
+	err = db.Update(bucket.Save)
+	if err != nil {
+		bad(500, "failed to save", err)
+		return
+	}
+	w.WriteHeader(204)
+}
+
 func HttpCreateBucket(w http.ResponseWriter, req *http.Request) {
 	b, err := MakeNewBucket(req.URL.Query().Get("name"))
 	if err != nil {

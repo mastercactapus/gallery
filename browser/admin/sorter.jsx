@@ -93,19 +93,22 @@ export default class Sorter extends React.Component {
             imgs.splice(this.state.draggingIdx, 1);
             imgs.splice(this.state.hoverIdx, 0, this.state.draggingID);
         } else {
-            var obj = JSON.parse(e.dataTransfer.getData("data/bucketImage"));
-            if (_.isObject(obj) && !_.contains(imgs, obj.ID)) {
-                lookup[obj.ID] = obj;
-                if (this.state.hoverIdx !== -1) { // insert mode
-                    imgs.splice(this.state.hoverIdx, 0, obj.ID);
-                } else { // append mode
-                    imgs.push(obj.ID);
+            var data = e.dataTransfer.getData("data/bucketImage");
+            if (!!data) {
+                var obj = JSON.parse(data);
+                if (_.isObject(obj) && !_.contains(imgs, obj.ID)) {
+                    lookup[obj.ID] = obj;
+                    if (this.state.hoverIdx !== -1) { // insert mode
+                        imgs.splice(this.state.hoverIdx, 0, obj.ID);
+                    } else { // append mode
+                        imgs.push(obj.ID);
+                    }
                 }
             }
         }
-
+        var newImages = _.map(imgs, (id)=>{return lookup[id];});
         this.setState({
-            images: _.map(imgs, (id)=>{return lookup[id];}),
+            images: newImages,
             hovering: false,
             dragging: false,
             hoverID: null,
@@ -113,12 +116,15 @@ export default class Sorter extends React.Component {
             draggingID: null,
             draggingIdx: -1,
         });
+        this.props.UpdateItems(newImages);
     }
 
     removeImage(id) {
+        var newImages = _.reject(this.state.images, {ID: id});
         this.setState({
-            images: _.reject(this.state.images, {ID: id})
+            images: newImages
         });
+        this.props.UpdateItems(newImages);
     }
 
     render() {

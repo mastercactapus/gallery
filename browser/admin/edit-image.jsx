@@ -46,6 +46,7 @@ export default class ImageEditor extends React.Component {
         this.forceUpdate();
         this.save();
     }
+
     save() {
         this.setState({
             saving: true,

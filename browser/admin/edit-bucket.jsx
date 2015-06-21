@@ -57,6 +57,7 @@ class BucketEditor extends React.Component {
 		super(props);
 		this.state = _.clone(props.bucket||{});
 		this.state.err = null;
+		this.save = _.debounce(this.save, 1000);
 	}
 
 	updateName(e) {
@@ -77,7 +78,48 @@ class BucketEditor extends React.Component {
 		})
 	}
 
-	update() {
+	updateImages(images) {
+		this.state.Images = images;
+		this.state.changed = true;
+		this.forceUpdate();
+		this.save();
+	}
+	updateThumbnails(thumbnails) {
+		this.state.SmallThumbnails = thumbnails;
+		this.state.changed = true;
+		this.forceUpdate();
+		this.save();
+	}
+	onChange(prop, e) {
+		if (prop === "Enabled") {
+			this.state[prop] = e.target.checked;
+		} else {
+			this.state[prop] = e.target.value;
+		}
+		this.state.changed = true;
+		this.forceUpdate();
+		this.save();
+	}
+	save() {
+		this.setState({
+            saving: true,
+            changed: false,
+            err: null,
+        });
+        return request.putAsync({
+            uri:"admin/buckets/" + this.state.ID,
+            body: JSON.stringify(this.state)
+        })
+        .catch(err=>{
+            console.error(err);
+            this.setState({err: err});
+        })
+        .finally(()=>{
+            this.setState({saving: false});
+        });
+	}
+
+	addImage() {
 		return request.getAsync({uri: "admin/buckets/" + encodeURIComponent(this.state.ID), json:true})
 		.spread((res,body)=>{
 			this.setState(body);
@@ -101,21 +143,38 @@ class BucketEditor extends React.Component {
 			</div>
 		}
 
+		var bdcolor;
+        if (this.state.changed && !this.state.saving) {
+            bdcolor = "orange";
+        } else if (this.state.saving) {
+            bdcolor = "green";
+        } else if (this.state.err) {
+            bdcolor = "red";
+        } else {
+            bdcolor = this.state.Enabled?"#aac":"#aaa";
+        }
 
-		return <div className="editBucket">
+        var style = {
+            backgroundColor: this.state.Enabled?"#bcf":"#ccc",
+            borderStyle: "solid",
+            borderWidth: "4px",
+            borderColor: bdcolor
+        };
+
+		return <div style={style} className="editBucket">
 			<div className="row">
 				<div className="box">
 					<div>
-						<label>Name<br /><input type="text" value={this.state.Name} /></label>
+						<label>Name<br /><input onChange={this.onChange.bind(this, "Name")} type="text" value={this.state.Name} /></label>
 					</div>
 					<div>
-						<label>Caption<br /><textarea type="text">{this.state.Caption}</textarea></label>
+						<label>Caption<br /><textarea onChange={this.onChange.bind(this, "Caption")} value={this.state.Caption}/></label>
 					</div>
 					<div>
-						<label><input type="checkbox" checked={this.state.Enabled?"checked":""} />Enabled</label>
+						<label><input onChange={this.onChange.bind(this, "Enabled")} type="checkbox" checked={this.state.Enabled?"checked":""} />Enabled</label>
 					</div>
 					<div className="row">
-						<Upload bucketId={this.state.ID} updateCb={this.update.bind(this)}/>
+						<Upload BucketId={this.state.ID} AddImage={this.addImage.bind(this)}/>
 					</div>
 				</div>
 				<div className="col-xs imgs">
@@ -131,7 +190,7 @@ class BucketEditor extends React.Component {
 										</div>
 									</div>
 									<div className="col-xs">
-										<Sorter Rows="2" Images={this.state.SmallThumbnails} />
+										<Sorter UpdateItems={this.updateThumbnails.bind(this)} Rows="2" Images={this.state.SmallThumbnails} />
 									</div>
 							</div>
 							<div className="row">
@@ -140,7 +199,7 @@ class BucketEditor extends React.Component {
 							<div className="row">
 								<div className="col-xs">
 									<div className="box">
-										<Sorter Edit="true" Images={this.state.Images} />
+										<Sorter UpdateItems={this.updateImages.bind(this)} Edit="true" Images={this.state.Images} />
 									</div>
 								</div>
 							</div>

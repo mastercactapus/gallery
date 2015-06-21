@@ -9,6 +9,7 @@ div.sorter.row {
 }
 
 .editBucket {
+    transition: border-color 0.1s, background-color 0.1s;
     .main-thumbnail {
         height:200px;
         width:200px;
@@ -21,9 +22,6 @@ div.sorter.row {
         }
 
     }
-    border-style: solid;
-    border-width: thin;
-    border-color: grey;
     padding: 1em;
     margin: 1em;
     color: grey;
@@ -50,8 +48,7 @@ div.sorter.row {
 }
 
 .bucketImage {
-    transition: border-color 0.25s ease-in;
-    transition: background-color 0.1s ease-in;
+    transition: border-color 0.1s, background-color 0.1s;
     width: 175px;
     height: 150px;
     padding: 2px;
