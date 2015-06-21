@@ -148,6 +148,51 @@ class BucketEditor extends React.Component {
 		});
 	}
 
+	clearThumb() {
+		this.state.Thumbnail.ID = 0;
+		this.state.changed = true;
+		this.validate();
+		this.save();
+	}
+
+	thumbDragStart() {
+		this.setState({
+			thumbDragging: true
+		});
+	}
+	thumbDragEnd() {
+		this.setState({
+			thumbDragging: false
+		});
+	}
+	thumbDragEnter(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		this.setState({
+			thumbHovering: true
+		});
+	}
+	thumbDragLeave(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		this.setState({
+			thumbHovering: false
+		});
+	}
+	thumbDragDrop(e) {
+		e.preventDefault();
+		var data = e.dataTransfer.getData("data/bucketImage");
+		if (!!data) {
+			var obj = JSON.parse(data);
+			this.state.SmallThumbnails = _.reject(this.state.SmallThumbnails, {ID: obj.ID});
+		}
+		this.state.thumbHovering=false;
+		this.state.thumbDragging=false;
+		this.state.changed = true;
+		this.validate();
+		this.save();
+	}
+
 	render() {
 		if (!this.props.bucket) {
 			return <div className="editBucket">
@@ -164,6 +209,38 @@ class BucketEditor extends React.Component {
 				<div className="error">{this.state.err}</div>
 			</div>
 		}
+
+		// thumbnail clear
+		// click to clear main thumbnail
+		// when dragging, show red drop zone
+		// to remove thumbnail (for small ones)
+
+		var clearStyle = {
+			borderColor: "grey",
+			borderWidth: 1,
+			borderStyle: "solid",
+			fontSize: 16,
+			padding: 16
+		};
+		var clearMsg;
+		if (this.state.thumbDragging) {
+			clearMsg = "Drop thumb here to remove";
+			clearStyle.backgroundColor = this.state.thumbHovering? "red": "orange";
+			// clearStyle.fontWeight = "bold";
+			clearStyle.color = "black";
+		} else {
+			clearMsg = <button onClick={this.clearThumb.bind(this)}>Click to clear main thumb</button>
+		}
+
+		var thumbClear = <div style={clearStyle}
+			onDragOver={e=>{e.preventDefault()}}
+			onDragEnter={e=>{e.preventDefault()}}
+			onDragEnterCapture={this.thumbDragEnter.bind(this)}
+			onDragLeaveCapture={this.thumbDragLeave.bind(this)}
+			onDrop={this.thumbDragDrop.bind(this)}
+			className="box">
+			{clearMsg}
+		</div>
 
 		var bdcolor;
         if (this.state.changed && !this.state.saving) {
@@ -207,11 +284,22 @@ class BucketEditor extends React.Component {
 							</div>
 							<div className="row">
 									<div className="box">
-										<div className="main-thumbnail">
-											<img src={this.state.Thumbnail.Filename}></img>
+										<div className="row">
+											<div className="main-thumbnail">
+												<img src={this.state.Thumbnail.Filename}></img>
+											</div>
 										</div>
+										<div className="row">
+											{thumbClear}
+										</div>
+
 									</div>
-									<div className="col-xs">
+									<div className="col-xs"
+											onDragStartCapture={this.thumbDragStart.bind(this)}
+											onDragEndCapture={this.thumbDragEnd.bind(this)}
+											onDropCapture={this.thumbDragEnd.bind(this)}
+
+											>
 										<Sorter UpdateEnabled={this.updateEnabled.bind(this)} UpdateItems={this.updateThumbnails.bind(this)} Rows="2" Images={this.state.SmallThumbnails} />
 									</div>
 							</div>

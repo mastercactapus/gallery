@@ -31,7 +31,6 @@ export default class Sorter extends React.Component {
 
     shouldComponentUpdate(nextProps, nextState) {
         if (this.state.images.length !== nextState.images.length) return true;
-        console.log("shoudl update", this.state.images, nextState.images);
         var imgMatch = _.all(this.state.images, (img, i)=>{
             return img.ID === nextState.images[i].ID && img.Enabled === nextState.images[i].Enabled;
         });
