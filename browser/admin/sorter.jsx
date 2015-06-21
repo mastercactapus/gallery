@@ -147,6 +147,11 @@ export default class Sorter extends React.Component {
                 c+=" dragging";
             }
             var editor;
+            var copyStyle = {
+                borderColor: "black",
+                borderStyle: "solid",
+                borderWidth: 1,
+            };
             if (!this.props.Edit) {
                 var boxStyle = {
                     height: "114px",
@@ -163,10 +168,12 @@ export default class Sorter extends React.Component {
                 var imgTag = "";
                 if (img !== 0) {
                     imgTag = <img src={imgDatas[img].SmallThumbnail.Filename}></img>
+                } else {
+                    _.extend(boxStyle, copyStyle);
                 }
                 editor = <div style={boxStyle} className="box">{imgTag}</div>
             } else {
-                editor = img === 0 ? <div className="box bucketImage drag-copy"></div> : <ImageEditor RemoveMe={this.removeImage.bind(this, img)} Image={imgDatas[img]} />;
+                editor = img === 0 ? <div style={copyStyle} className="box bucketImage"></div> : <ImageEditor RemoveMe={this.removeImage.bind(this, img)} Image={imgDatas[img]} />;
             }
 
             return <div className={c}
