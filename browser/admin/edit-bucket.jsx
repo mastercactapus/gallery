@@ -81,14 +81,26 @@ class BucketEditor extends React.Component {
 	updateImages(images) {
 		this.state.Images = images;
 		this.state.changed = true;
-		this.forceUpdate();
+		this.validate();
 		this.save();
 	}
 	updateThumbnails(thumbnails) {
 		this.state.SmallThumbnails = thumbnails;
 		this.state.changed = true;
-		this.forceUpdate();
+		this.validate();
 		this.save();
+	}
+	updateEnabled(id, enabled) {
+		var obj = _.find(this.state.Images, {ID: id});
+		if (obj) {
+			obj.Enabled = enabled;
+		}
+		var obj = _.find(this.state.SmallThumbnails, {ID: id});
+		if (obj) {
+			obj.Enabled = enabled;
+		}
+		this.validate();
+		//don't need save, just UI update
 	}
 	onChange(prop, e) {
 		if (prop === "Enabled") {
@@ -97,8 +109,18 @@ class BucketEditor extends React.Component {
 			this.state[prop] = e.target.value;
 		}
 		this.state.changed = true;
-		this.forceUpdate();
+		this.validate();
 		this.save();
+	}
+	validate() {
+		var imageIDs = _.pluck(this.state.Images, "ID");
+		this.state.SmallThumbnails = _.filter(this.state.SmallThumbnails, (t)=>{
+			return _.contains(imageIDs, t.ID);
+		});
+		if (!_.contains(imageIDs, this.state.Thumbnail.ID)) {
+			this.state.Thumbnail.ID = 0;
+		}
+		this.forceUpdate();
 	}
 	save() {
 		this.setState({
@@ -190,7 +212,7 @@ class BucketEditor extends React.Component {
 										</div>
 									</div>
 									<div className="col-xs">
-										<Sorter UpdateItems={this.updateThumbnails.bind(this)} Rows="2" Images={this.state.SmallThumbnails} />
+										<Sorter UpdateEnabled={this.updateEnabled.bind(this)} UpdateItems={this.updateThumbnails.bind(this)} Rows="2" Images={this.state.SmallThumbnails} />
 									</div>
 							</div>
 							<div className="row">
@@ -199,7 +221,7 @@ class BucketEditor extends React.Component {
 							<div className="row">
 								<div className="col-xs">
 									<div className="box">
-										<Sorter UpdateItems={this.updateImages.bind(this)} Edit="true" Images={this.state.Images} />
+										<Sorter UpdateEnabled={this.updateEnabled.bind(this)} UpdateItems={this.updateImages.bind(this)} Edit="true" Images={this.state.Images} />
 									</div>
 								</div>
 							</div>

@@ -22,11 +22,18 @@ export default class Sorter extends React.Component {
 
         this.dragNum = 0;
     }
+    componentWillReceiveProps(props) {
+        if (props.Images) {
+            this.state.images = props.Images;
+            this.forceUpdate();
+        }
+    }
 
     shouldComponentUpdate(nextProps, nextState) {
         if (this.state.images.length !== nextState.images.length) return true;
+        console.log("shoudl update", this.state.images, nextState.images);
         var imgMatch = _.all(this.state.images, (img, i)=>{
-            return img.ID === nextState.images[i].ID;
+            return img.ID === nextState.images[i].ID && img.Enabled === nextState.images[i].Enabled;
         });
         if (!imgMatch) return true;
         var cmp = (prop)=>{
@@ -163,17 +170,23 @@ export default class Sorter extends React.Component {
                     height: "auto",
                     width: "auto",
                     maxWidth:"100%",
-                    maxHeight: "100%"
+                    maxHeight: "100%",
+                    margin: "auto",
                 };
                 var imgTag = "";
                 if (img !== 0) {
-                    imgTag = <img src={imgDatas[img].SmallThumbnail.Filename}></img>
+                    if (!imgDatas[img].Enabled) {
+                        imgStyle.opacity = 0.65;
+                    }
+                    imgTag = <img style={imgStyle} src={imgDatas[img].SmallThumbnail.Filename}></img>
                 } else {
                     _.extend(boxStyle, copyStyle);
                 }
+
+
                 editor = <div style={boxStyle} className="box">{imgTag}</div>
             } else {
-                editor = img === 0 ? <div style={copyStyle} className="box bucketImage"></div> : <ImageEditor RemoveMe={this.removeImage.bind(this, img)} Image={imgDatas[img]} />;
+                editor = img === 0 ? <div style={copyStyle} className="box bucketImage"></div> : <ImageEditor UpdateEnabled={this.props.UpdateEnabled.bind(this, img)} RemoveMe={this.removeImage.bind(this, img)} Image={imgDatas[img]} />;
             }
 
             return <div className={c}
