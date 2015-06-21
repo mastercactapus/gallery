@@ -106,7 +106,7 @@ func HttpUploadToBucket(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	w.WriteHeader(204)
+	json.NewEncoder(w).Encode(meta)
 }
 
 func HttpDeleteImage(w http.ResponseWriter, req *http.Request) {
@@ -218,6 +218,46 @@ func HttpCreateBucket(w http.ResponseWriter, req *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&b)
+}
+
+func HttpUpdateBuckets(w http.ResponseWriter, req *http.Request) {
+	l := log.WithFields(log.Fields{
+		"Path":       req.RequestURI,
+		"Method":     req.Method,
+		"RemoteAddr": req.RemoteAddr,
+	})
+	bad := func(status int, msg string, err error) {
+		e := fmt.Sprintf("error: %s: %s", msg, err.Error())
+		l.Errorln(e)
+		io.WriteString(w, e)
+		w.WriteHeader(status)
+	}
+	var buckets []struct {
+		ID int32
+	}
+	err := json.NewDecoder(req.Body).Decode(&buckets)
+	if err != nil {
+		bad(400, "invalid json", err)
+		return
+	}
+	ids := make([]int32, len(buckets))
+	for i, b := range buckets {
+		if b.ID < 1 {
+			bad(400, "invalid id", fmt.Errorf("invalid bucket id"))
+			return
+		}
+		ids[i] = b.ID
+	}
+	err = db.Update(func(tx *bolt.Tx) error {
+		bk := tx.Bucket(pageBucket)
+		bb := &BBucket{bk}
+		return bb.WriteInt32s("Buckets", ids)
+	})
+	if err != nil {
+		bad(500, "failed to save to db", err)
+		return
+	}
+	w.WriteHeader(204)
 }
 
 func HttpGetBuckets(w http.ResponseWriter, req *http.Request) {

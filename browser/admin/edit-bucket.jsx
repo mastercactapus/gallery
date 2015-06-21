@@ -5,6 +5,7 @@ import Upload from "./upload.jsx";
 import request from "browser-request";
 import Sorter from "./sorter.jsx";
 Bluebird.promisifyAll(request);
+var req = Bluebird.promisify(request);
 
 export default class Buckets extends React.Component {
 	constructor(props) {
@@ -38,9 +39,63 @@ export default class Buckets extends React.Component {
 		});
 	}
 
+	delete(id) {
+		this.state.buckets = _.reject(this.state.buckets, {ID: id});
+		this.forceUpdate();
+		this.save();
+	}
+	moveUp(i) {
+		var bk = this.state.buckets.splice(i,1);
+		this.state.buckets.splice(i-1,0,bk[0]);
+		this.forceUpdate();
+		this.save();
+	}
+	moveDown(i) {
+		var bk = this.state.buckets.splice(i,1);
+		this.state.buckets.splice(i+1,0,bk[0]);
+		this.forceUpdate();
+		this.save();
+	}
+
+	save() {
+		// array of objects with IDs
+		var mapFn = _.ary(_.partialRight(_.pick, "ID"), 1);
+		var buckets = _.map(this.state.buckets, mapFn);
+		this.setState({
+            saving: true,
+            changed: false,
+            err: null,
+        });
+        return req({
+			method: "PATCH",
+            uri:"admin/buckets",
+            body: JSON.stringify(buckets)
+        })
+		.spread((res,body)=>{
+			if (res.statusCode !== 204) throw new Error("non-204");
+		})
+        .catch(err=>{
+            console.error(err);
+            this.setState({err: err});
+        })
+        .finally(()=>{
+            this.setState({saving: false});
+        });
+	}
+
 	render() {
-		var editors = _.map(this.state.buckets, bucket=>{
-			return <div key={bucket.ID} className="row"><BucketEditor bucket={bucket} /></div>
+		var editors = _.map(this.state.buckets, (bucket, i)=>{
+
+			return <div key={bucket.ID} className="row">
+				<BucketEditor
+					First={i===0}
+					Last={i===(this.state.buckets.length-1)}
+					Delete={this.delete.bind(this, bucket.ID)}
+					MoveUp={this.moveUp.bind(this, i)}
+					MoveDown={this.moveDown.bind(this, i)}
+					bucket={bucket} />
+
+				</div>
 		});
 
 		return <div>
@@ -65,7 +120,7 @@ class BucketEditor extends React.Component {
 	}
 
 	create(e) {
-		this.setState({err: null});
+		this.setState({err: null, Name: ""});
 		e.preventDefault();
 		e.stopPropagation();
 		return request.postAsync({uri:"/admin/buckets?name=" + encodeURIComponent(this.state.Name), json: true})
@@ -136,6 +191,9 @@ class BucketEditor extends React.Component {
             uri:"admin/buckets/" + this.state.ID,
             body: JSON.stringify(this.state)
         })
+		.spread((res,body)=>{
+			if (res.statusCode !== 204) throw new Error("non-204");
+		})
         .catch(err=>{
             console.error(err);
             this.setState({err: err});
@@ -145,11 +203,9 @@ class BucketEditor extends React.Component {
         });
 	}
 
-	addImage() {
-		return request.getAsync({uri: "admin/buckets/" + encodeURIComponent(this.state.ID), json:true})
-		.spread((res,body)=>{
-			this.setState(body);
-		});
+	addImage(img) {
+		this.state.Images.push(img);
+		this.validate();
 	}
 
 	clearThumb() {
@@ -199,7 +255,8 @@ class BucketEditor extends React.Component {
 	}
 
 	renderCreateNew() {
-		return <div className="editBucket">
+		var style = this.getBucketStyle();
+		return <div style={style} className="editBucket">
 			<div className="row">
 				<div className="">
 					<div>
@@ -268,9 +325,33 @@ class BucketEditor extends React.Component {
 		};
 	}
 
+	delete() {
+		this.setState({
+			confirmDelete: true
+		});
+	}
 	renderEditBox() {
+
+		var buttons = [];
+		if (!this.props.First) {
+			buttons.push(<button
+				key="0"
+				onClick={this.props.MoveUp}>Move Up</button>);
+		}
+		if(!this.props.Last) {
+			buttons.push(<button
+			key="1"
+			onClick={this.props.MoveDown}>Move Down</button>);
+		}
+		buttons.push(<button
+			key="2"
+			onClick={this.delete.bind(this)}>Delete</button>);
+
 		return 	(
 			<div className="box">
+				<div>
+					{buttons}
+				</div>
 				<div>
 					<label>Name<br /><input onChange={this.onChange.bind(this, "Name")} type="text" value={this.state.Name} /></label>
 				</div>
@@ -279,9 +360,6 @@ class BucketEditor extends React.Component {
 				</div>
 				<div>
 					<label><input onChange={this.onChange.bind(this, "Enabled")} type="checkbox" checked={this.state.Enabled?"checked":""} />Enabled</label>
-				</div>
-				<div className="row">
-					<Upload BucketId={this.state.ID} AddImage={this.addImage.bind(this)}/>
 				</div>
 			</div>
 		);
@@ -346,9 +424,29 @@ class BucketEditor extends React.Component {
 		);
 	}
 
+	renderConfirmDelete() {
+		var style = this.getBucketStyle();
+
+		return <div style={style} className="editBucket">
+			<div className="row">
+			Are you sure you want to delete this bucket?
+			</div>
+			<div className="row">
+			<button
+			onClick={this.props.Delete}
+			>Yes</button><button
+				onClick={()=>{this.setState({confirmDelete: false})}}
+			>Cancel</button>
+			</div>
+		</div>
+	}
+
 	render() {
 		if (!this.props.bucket) {
 			return this.renderCreateNew();
+		}
+		if (this.state.confirmDelete) {
+			return this.renderConfirmDelete();
 		}
 		var thumbClear = this.renderThumbClearButton();
 		var style = this.getBucketStyle();
@@ -359,6 +457,12 @@ class BucketEditor extends React.Component {
 				<div className="col-xs imgs">
 					<div className="row">
 						<div className="box">
+							<div className="row">
+								<div className="box">Upload</div>
+							</div>
+							<div className="row">
+								<Upload BucketId={this.state.ID} AddImage={this.addImage.bind(this)}/>
+							</div>
 							<div className="row">
 								<div className="box">Thumbnails</div>
 							</div>

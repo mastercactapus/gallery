@@ -87,20 +87,20 @@ func btobl(v []byte) bool {
 	return len(v) == 1 && v[0] == 1
 }
 
-func (bk *BBucket) WriteString(key string, value string) {
-	bk.Put([]byte(key), []byte(value))
+func (bk *BBucket) WriteString(key string, value string) error {
+	return bk.Put([]byte(key), []byte(value))
 }
-func (bk *BBucket) WriteInt32(key string, value int32) {
-	bk.Put([]byte(key), itob(value))
+func (bk *BBucket) WriteInt32(key string, value int32) error {
+	return bk.Put([]byte(key), itob(value))
 }
-func (bk *BBucket) WriteInt32s(key string, value []int32) {
-	bk.Put([]byte(key), istob(value))
+func (bk *BBucket) WriteInt32s(key string, value []int32) error {
+	return bk.Put([]byte(key), istob(value))
 }
-func (bk *BBucket) WriteBool(key string, value bool) {
+func (bk *BBucket) WriteBool(key string, value bool) error {
 	if value {
-		bk.Put([]byte(key), []byte{1})
+		return bk.Put([]byte(key), []byte{1})
 	} else {
-		bk.Put([]byte(key), []byte{0})
+		return bk.Put([]byte(key), []byte{0})
 	}
 }
 func (bk *BBucket) ReadString(key string) string {

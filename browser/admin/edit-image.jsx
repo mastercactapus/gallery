@@ -26,7 +26,8 @@ export default class ImageEditor extends React.Component {
             method: "DELETE",
             uri: "admin/images/" + this.state.ID,
         })
-        .then(()=>{
+        .spread((res,body)=>{
+            if (res.statusCode !== 204) throw new Error("non-204");
             this.props.RemoveMe();
         })
         .catch(err=>{
@@ -57,6 +58,9 @@ export default class ImageEditor extends React.Component {
         return request.putAsync({
             uri:"admin/images/" + this.state.ID,
             body: JSON.stringify(this.state)
+        })
+        .spread((res,body)=>{
+            if (res.statusCode !== 204) throw new Error("non-204");
         })
         .catch(err=>{
             console.error(err);

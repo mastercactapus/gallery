@@ -73,6 +73,7 @@ func main() {
 	r.Methods("POST").Path("/admin/upload/{bucket}").HandlerFunc(HttpUploadToBucket)
 	r.Methods("POST").Path("/admin/buckets").HandlerFunc(HttpCreateBucket)
 	r.Methods("GET").Path("/admin/buckets").HandlerFunc(HttpGetBuckets)
+	r.Methods("PATCH").Path("/admin/buckets").HandlerFunc(HttpUpdateBuckets)
 	r.Methods("GET").Path("/admin/buckets/{bucket}").HandlerFunc(HttpGetBucket)
 	r.Methods("PUT").Path("/admin/buckets/{id}").HandlerFunc(HttpUpdateBucket)
 	r.Methods("GET").Path("/admin/images/{id}").HandlerFunc(HttpGetImage)

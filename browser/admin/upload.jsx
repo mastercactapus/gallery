@@ -55,20 +55,22 @@ export default class Uploader extends React.Component {
 			xhr.upload.addEventListener("progress", e=>{
 				this.setState({uploadedBytes: startPos+e.loaded});
 			});
+			xhr.responseType="json";
 			xhr.addEventListener("error", reject);
 			xhr.addEventListener("readystatechange", ()=>{
 				if (xhr.readyState !== 4) return;
-				if (xhr.status !== 204) {
-					reject(new Error("non-204 status code: " + xhr.status));
+				if (xhr.status !== 200) {
+					reject(new Error("non-200 status code: " + xhr.status));
 				} else {
-					resolve();
+					resolve(xhr.response);
 				}
 			});
-			xhr.open("POST", "admin/upload/" + this.props.bucketId, true);
+			xhr.open("POST", "admin/upload/" + this.props.BucketId, true);
 			xhr.setRequestHeader("Content-type", file.type);
 			xhr.setRequestHeader("X-File-Name", file.name);
 			xhr.send(file);
-		});
+		})
+		.tap(this.props.AddImage);
 	}
 
 	uploadFiles(files) {
@@ -85,9 +87,11 @@ export default class Uploader extends React.Component {
 			currentFile: files[0].name
 		});
 
-		return Bluebird.each(files, this.uploadFile.bind(this))
+		return Bluebird.map(files, this.uploadFile.bind(this), {concurrency: 1})
 		.then(() =>{
-			this.setState({uploading: false});
+			this.setState({
+				uploading: false
+			});
 		})
 		.finally(this.props.updateCb);
 	}
@@ -113,21 +117,21 @@ export default class Uploader extends React.Component {
 
 	render() {
 		if (this.state.err) {
-			return <div className="uploadbox error">upload failed: {this.state.err.message}</div>
+			return <div className="box uploadbox error">upload failed: {this.state.err.message}</div>
 		}
 
 		if (this.state.uploading) {
-			return <div className="uploadbox uploading">
+			return <div className="box uploadbox uploading">
 				<p>Current File: {this.state.currentFile}</p>
 				<p>Uploading {this.state.uploadedFiles} of {this.state.totalFiles} ({prettyByte(this.state.uploadedBytes)}/{prettyByte(this.state.totalBytes)})</p>
 				<progress value={this.state.uploadedBytes} max={this.state.totalBytes}></progress>
 			</div>
 		} else if (this.state.dragging) {
-			return <div className="uploadbox hover" onDragOver={this.dragOver.bind(this)} onDragLeave={this.dragLeave.bind(this)} onDrop={this.drop.bind(this)}>
+			return <div className="box uploadbox hover" onDragOver={this.dragOver.bind(this)} onDragLeave={this.dragLeave.bind(this)} onDrop={this.drop.bind(this)}>
 				Drop it like it's hot
 			</div>
 		} else {
-			return <div className="uploadbox" onDragOver={this.dragOver.bind(this)} onDragLeave={this.dragLeave.bind(this)} onDrop={this.drop.bind(this)}>
+			return <div className="box uploadbox" onDragOver={this.dragOver.bind(this)} onDragLeave={this.dragLeave.bind(this)} onDrop={this.drop.bind(this)}>
 				Drag image(s)<br />here to upload
 			</div>
 		}
