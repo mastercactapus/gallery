@@ -109,6 +109,70 @@ func HttpUploadToBucket(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(204)
 }
 
+func HttpDeleteImage(w http.ResponseWriter, req *http.Request) {
+	l := log.WithFields(log.Fields{
+		"Path":       req.RequestURI,
+		"Method":     req.Method,
+		"RemoteAddr": req.RemoteAddr,
+	})
+	bad := func(status int, msg string, err error) {
+		e := fmt.Sprintf("error: %s: %s", msg, err.Error())
+		l.Errorln(e)
+		io.WriteString(w, e)
+		w.WriteHeader(status)
+	}
+	idStr := mux.Vars(req)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		bad(400, "invalid id", err)
+		return
+	}
+	key := itob(int32(id))
+	err = db.Update(func(tx *bolt.Tx) error {
+		return tx.Bucket(imageBucket).DeleteBucket(key)
+	})
+	if err != nil {
+		bad(500, "delete failed", err)
+		return
+	}
+	w.WriteHeader(204)
+}
+func HttpUpdateImage(w http.ResponseWriter, req *http.Request) {
+	l := log.WithFields(log.Fields{
+		"Path":       req.RequestURI,
+		"Method":     req.Method,
+		"RemoteAddr": req.RemoteAddr,
+	})
+	bad := func(status int, msg string, err error) {
+		e := fmt.Sprintf("error: %s: %s", msg, err.Error())
+		l.Errorln(e)
+		io.WriteString(w, e)
+		w.WriteHeader(status)
+	}
+	idStr := mux.Vars(req)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		bad(400, "invalid id", err)
+		return
+	}
+	meta := new(ImageMeta)
+	err = json.NewDecoder(req.Body).Decode(meta)
+	if err != nil {
+		bad(400, "invalid json", err)
+		return
+	}
+	if int32(id) != meta.ID {
+		bad(400, "id mismatch", fmt.Errorf("expected id numbers to match"))
+		return
+	}
+	err = db.Update(meta.Save)
+	if err != nil {
+		bad(500, "failed to save", err)
+		return
+	}
+	w.WriteHeader(204)
+}
+
 func HttpCreateBucket(w http.ResponseWriter, req *http.Request) {
 	b, err := MakeNewBucket(req.URL.Query().Get("name"))
 	if err != nil {
@@ -129,6 +193,36 @@ func HttpGetBuckets(w http.ResponseWriter, req *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(&b)
+}
+
+func HttpGetImage(w http.ResponseWriter, req *http.Request) {
+	l := log.WithFields(log.Fields{
+		"Path":       req.RequestURI,
+		"Method":     req.Method,
+		"RemoteAddr": req.RemoteAddr,
+	})
+	bad := func(status int, msg string, err error) {
+		e := fmt.Sprintf("error: %s: %s", msg, err.Error())
+		l.Errorln(e)
+		io.WriteString(w, e)
+		w.WriteHeader(status)
+	}
+	idStr := mux.Vars(req)["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		bad(400, "invalid id", err)
+		return
+	}
+
+	meta := new(ImageMeta)
+	meta.ID = int32(id)
+	err = db.View(meta.Load)
+	if err != nil {
+		bad(400, "could not load meta", err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(meta)
 }
 
 func HttpGetBucket(w http.ResponseWriter, req *http.Request) {

@@ -4,10 +4,13 @@ import Bluebird from "bluebird";
 import request from "browser-request";
 Bluebird.promisifyAll(request);
 
+var req = Bluebird.promisify(request);
+
 export default class ImageEditor extends React.Component {
     constructor(props) {
         super(props)
         this.state = this.props.Image;
+        this.save = _.debounce(this.save, 1000);
     }
 
     confirmDelete(e) {
@@ -19,11 +22,51 @@ export default class ImageEditor extends React.Component {
         this.setState({confirm: false});
     }
     doDelete(e) {
-
+        req({
+            method: "DELETE",
+            uri: "admin/images/" + this.state.ID,
+        })
+        .then(()=>{
+            this.props.RemoveMe();
+        })
+        .catch(err=>{
+            console.error(err);
+            this.setState({
+                err: err
+            });
+        });
+    }
+    onChange(prop, e) {
+        if (prop === "Enabled") {
+            this.state[prop] = e.target.checked;
+        } else {
+            this.state[prop] = e.target.value;
+        }
+        this.state.changed = true;
+        this.forceUpdate();
+        this.save();
+    }
+    save() {
+        this.setState({
+            saving: true,
+            changed: false,
+            err: null,
+        });
+        return request.putAsync({
+            uri:"admin/images/" + this.state.ID,
+            body: JSON.stringify(this.state)
+        })
+        .catch(err=>{
+            console.error(err);
+            this.setState({err: err});
+        })
+        .finally(()=>{
+            this.setState({saving: false});
+        });
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-        var props = ["Enabled", "Name", "confirm", "Caption", "ID"];
+        var props = ["Enabled", "Name", "confirm", "Caption", "ID", "err", "saving"];
         var cmp = (prop)=>{
             return this.state[prop] === nextState[prop];
         };
@@ -40,15 +83,28 @@ export default class ImageEditor extends React.Component {
             </div>
         }
 
+        var bdcolor;
+        if (this.state.changed && !this.state.saving) {
+            bdcolor = "orange";
+        } else if (this.state.saving) {
+            bdcolor = "green";
+        } else if (this.state.err) {
+            bdcolor = "red";
+        } else {
+            bdcolor = this.state.Enabled?"#aac":"#aaa";
+        }
+
         var style = {
-            backgroundColor: this.state.Enabled?"#cce":"#ccc",
-            border: "4px solid " + (this.state.Enabled?"#aac":"#aaa"),
+            backgroundColor: this.state.Enabled?"#bcf":"#ccc",
+            borderStyle: "solid",
+            borderWidth: "2px",
+            borderColor: bdcolor
         };
 
         return <div className="box bucketImage" style={style}>
             <div className="row between-xs">
                 <div className="box">
-                    <input className="img-enable" type="checkbox" checked={this.state.Enabled?"checked":""} title="Enable/Disable Image" />
+                    <input onChange={this.onChange.bind(this, "Enabled")} className="img-enable" type="checkbox" checked={this.state.Enabled?"checked":""} title="Enable/Disable Image" />
                 </div>
                 <div className="box"></div>
                 <div className="box">
@@ -59,8 +115,8 @@ export default class ImageEditor extends React.Component {
                 <img draggable="false" src={this.state.SmallThumbnail.Filename}></img>
             </div>
 
-            <div className="row"><input placeholder="name" value={this.state.Name} /></div>
-            <div className="row"><textarea placeholder="caption" value={this.state.Caption} /></div>
+            <div className="row"><input onChange={this.onChange.bind(this, "Name")} placeholder="name" value={this.state.Name} /></div>
+            <div className="row"><textarea onChange={this.onChange.bind(this, "Caption")} placeholder="caption" value={this.state.Caption} /></div>
         </div>
     }
 }

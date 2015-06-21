@@ -5,7 +5,7 @@ import Bluebird from "bluebird";
 import request from "browser-request";
 Bluebird.promisifyAll(request);
 
-
+import ReactCSSTransitionGroup from "react/lib/ReactCSSTransitionGroup";
 
 export default class Sorter extends React.Component {
     constructor(props) {
@@ -115,6 +115,11 @@ export default class Sorter extends React.Component {
         });
     }
 
+    removeImage(id) {
+        this.setState({
+            images: _.reject(this.state.images, {ID: id})
+        });
+    }
 
     render() {
         var imgDatas = _.indexBy(this.state.images,"ID");
@@ -155,7 +160,7 @@ export default class Sorter extends React.Component {
                 }
                 editor = <div style={boxStyle} className="box">{imgTag}</div>
             } else {
-                editor = img === 0 ? <div className="box bucketImage drag-copy"></div> : <ImageEditor Image={imgDatas[img]} />;
+                editor = img === 0 ? <div className="box bucketImage drag-copy"></div> : <ImageEditor RemoveMe={this.removeImage.bind(this, img)} Image={imgDatas[img]} />;
             }
 
             return <div className={c}
@@ -188,7 +193,7 @@ export default class Sorter extends React.Component {
             var imgEls = _.map(imgs, mapImg);
             images[0] = <div key="0" className="row">{imgEls}</div>;
         } else {
-            images = <div className="box">No images yet.</div>
+            images = <div key="-1" className="box">No images yet.</div>
         }
 
         var style = {};
@@ -204,7 +209,10 @@ export default class Sorter extends React.Component {
             onDragOver={e=>{e.preventDefault();}}
             onDrop={this.dragDrop.bind(this)}
             className="sorter row">
-            <div className="box">{images}</div>
+
+            <div className="box">
+                {images}
+            </div>
         </div>
     }
 

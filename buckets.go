@@ -258,7 +258,11 @@ func (i *ImageMeta) Load(tx *bolt.Tx) error {
 	if i.ID == 0 {
 		return nil
 	}
-	c := tx.Bucket(imageBucket).Bucket(itob(i.ID)).Cursor()
+	bk := tx.Bucket(imageBucket).Bucket(itob(i.ID))
+	if bk == nil {
+		return fmt.Errorf("could not find image meta #%d", i.ID)
+	}
+	c := bk.Cursor()
 	var err error
 	for key, val := c.First(); key != nil; key, val = c.Next() {
 		switch string(key) {
