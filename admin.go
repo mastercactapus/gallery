@@ -19,9 +19,13 @@ var store *sessions.CookieStore
 
 const adminSessionName = "admin-session"
 
+type nextHandler struct {
+	http.Handler
+}
+
 func init() {
-	k1 := make([]byte, 4096)
-	k2 := make([]byte, 4096)
+	k1 := make([]byte, 32)
+	k2 := make([]byte, 32)
 	_, err := io.ReadFull(rand.Reader, k1)
 	if err != nil {
 		panic(err)
@@ -34,6 +38,16 @@ func init() {
 	store = sessions.NewCookieStore(k1, k2)
 	store.Options.HttpOnly = true
 	// store.Options.Secure = true
+}
+
+func (n *nextHandler) HttpMustAuth(w http.ResponseWriter, req *http.Request) {
+	sess, _ := store.Get(req, adminSessionName)
+	isAdmin, ok := sess.Values["admin-access"].(bool)
+	if ok && isAdmin {
+		n.Handler.ServeHTTP(w, req)
+	} else {
+		w.WriteHeader(401)
+	}
 }
 
 func HttpGetAdmin(w http.ResponseWriter, req *http.Request) {
@@ -113,7 +127,10 @@ func HttpPostLogin(w http.ResponseWriter, req *http.Request) {
 	sess, _ := store.Get(req, adminSessionName)
 	sess.Values["admin-access"] = true
 	sess.Values["email"] = token.Email
-	sess.Save(req, w)
+	err = sess.Save(req, w)
+	if err != nil {
+		l.Warnln(err)
+	}
 }
 
 func HttpUploadToBucket(w http.ResponseWriter, req *http.Request) {

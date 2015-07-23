@@ -66,6 +66,7 @@ func initBuckets(tx *bolt.Tx) error {
 	}
 	return nil
 }
+
 func main() {
 	_ = "breakpoint"
 	var err error
@@ -79,20 +80,24 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.Methods("POST").Path("/admin/upload/{bucket}").HandlerFunc(HttpUploadToBucket)
-	r.Methods("POST").Path("/admin/buckets").HandlerFunc(HttpCreateBucket)
-	r.Methods("GET").Path("/admin/buckets").HandlerFunc(HttpGetBuckets)
-	r.Methods("PATCH").Path("/admin/buckets").HandlerFunc(HttpUpdateBuckets)
-	r.Methods("GET").Path("/admin/buckets/{bucket}").HandlerFunc(HttpGetBucket)
-	r.Methods("PUT").Path("/admin/buckets/{id}").HandlerFunc(HttpUpdateBucket)
-	r.Methods("GET").Path("/admin/images/{id}").HandlerFunc(HttpGetImage)
-	r.Methods("DELETE").Path("/admin/images/{id}").HandlerFunc(HttpDeleteImage)
-	r.Methods("PUT").Path("/admin/images/{id}").HandlerFunc(HttpUpdateImage)
 
-	r.Methods("GET").Path("/").HandlerFunc(HttpGetGallery)
 	r.Methods("GET").Path("/admin").HandlerFunc(HttpGetAdmin)
 	r.Methods("GET").Path("/admin/logout").HandlerFunc(HttpLogout)
 	r.Methods("POST").Path("/admin/login").HandlerFunc(HttpPostLogin)
+
+	authed := mux.NewRouter()
+	authed.Methods("POST").Path("/admin/upload/{bucket}").HandlerFunc(HttpUploadToBucket)
+	authed.Methods("POST").Path("/admin/buckets").HandlerFunc(HttpCreateBucket)
+	authed.Methods("GET").Path("/admin/buckets").HandlerFunc(HttpGetBuckets)
+	authed.Methods("PATCH").Path("/admin/buckets").HandlerFunc(HttpUpdateBuckets)
+	authed.Methods("GET").Path("/admin/buckets/{bucket}").HandlerFunc(HttpGetBucket)
+	authed.Methods("PUT").Path("/admin/buckets/{id}").HandlerFunc(HttpUpdateBucket)
+	authed.Methods("GET").Path("/admin/images/{id}").HandlerFunc(HttpGetImage)
+	authed.Methods("DELETE").Path("/admin/images/{id}").HandlerFunc(HttpDeleteImage)
+	authed.Methods("PUT").Path("/admin/images/{id}").HandlerFunc(HttpUpdateImage)
+	r.PathPrefix("/admin").HandlerFunc((&nextHandler{Handler: authed}).HttpMustAuth)
+
+	r.Methods("GET").Path("/").HandlerFunc(HttpGetGallery)
 
 	updir := http.FileServer(http.Dir("upload"))
 	r.Methods("GET").PathPrefix("/upload").Handler(http.StripPrefix("/upload/", updir))
