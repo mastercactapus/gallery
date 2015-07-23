@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="google-signin-client_id" content="{{.ClientID}}">
+	<title>{{.Title}}</title>
+	<script src="http://10.42.198.162:8080/admin.js"></script>
+</head>
+<body>
+	<script src="https://apis.google.com/js/platform.js?onload=gapiLoaded" async defer></script>
+	<div class="g-signin2" data-onsuccess="onSignIn"></div>
+	<div id="signOut"></div>
+	<div id="autherr"></div>
+
+	<div id="app"></div>
+</body>
+</html>

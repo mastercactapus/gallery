@@ -19,6 +19,9 @@ type PageConfig struct {
 	Buckets []BucketConfig
 }
 
+//add creator
+//and/or copywrite holder stuff
+//https://dev.twitter.com/cards/types/gallery
 type BucketConfig struct {
 	ID              int32
 	Name            string

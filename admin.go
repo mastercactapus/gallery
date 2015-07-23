@@ -1,16 +1,120 @@
 package main
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"github.com/boltdb/bolt"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 )
+
+var store *sessions.CookieStore
+
+const adminSessionName = "admin-session"
+
+func init() {
+	k1 := make([]byte, 4096)
+	k2 := make([]byte, 4096)
+	_, err := io.ReadFull(rand.Reader, k1)
+	if err != nil {
+		panic(err)
+	}
+	_, err = io.ReadFull(rand.Reader, k2)
+	if err != nil {
+		panic(err)
+	}
+
+	store = sessions.NewCookieStore(k1, k2)
+	store.Options.HttpOnly = true
+	// store.Options.Secure = true
+}
+
+func HttpGetAdmin(w http.ResponseWriter, req *http.Request) {
+	var state struct {
+		Title    string
+		ClientID string
+	}
+	state.Title = "Gallery Admin"
+	state.ClientID = oauthClientID
+
+	err := tmpl.ExecuteTemplate(w, "admin.html", &state)
+	if err != nil {
+		log.Errorln(err)
+	}
+}
+
+func HttpLogout(w http.ResponseWriter, req *http.Request) {
+	sess, _ := store.Get(req, adminSessionName)
+	sess.Values["admin-access"] = false
+	sess.Save(req, w)
+	w.Header().Set("Location", "/admin")
+	w.WriteHeader(302)
+}
+
+func HttpPostLogin(w http.ResponseWriter, req *http.Request) {
+	l := log.WithFields(log.Fields{
+		"Path":       req.RequestURI,
+		"Method":     req.Method,
+		"RemoteAddr": req.RemoteAddr,
+	})
+	var data struct {
+		Token string
+	}
+	err := json.NewDecoder(req.Body).Decode(&data)
+	if err != nil {
+		l.Warnln(err)
+		w.WriteHeader(400)
+		return
+	}
+	resp, err := http.Get("https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=" + url.QueryEscape(data.Token))
+	if err != nil {
+		l.Warnln(err)
+		w.WriteHeader(503)
+		return
+	}
+	var token struct {
+		Email string
+		Aud   string
+	}
+	err = json.NewDecoder(resp.Body).Decode(&token)
+	resp.Body.Close()
+	if err != nil {
+		l.Warnln(err)
+		w.WriteHeader(500)
+		return
+	}
+
+	if token.Aud != oauthClientID {
+		l.Warnln("OAUTH_CLIENT_ID Mismatch")
+		w.WriteHeader(400)
+		return
+	}
+
+	var isAdminEmail bool
+	for _, e := range adminEmails {
+		if e != "" && e == token.Email {
+			isAdminEmail = true
+			break
+		}
+	}
+	if !isAdminEmail {
+		l.Warnln("logged in via google, but not admin")
+		w.WriteHeader(401)
+		return
+	}
+
+	sess, _ := store.Get(req, adminSessionName)
+	sess.Values["admin-access"] = true
+	sess.Values["email"] = token.Email
+	sess.Save(req, w)
+}
 
 func HttpUploadToBucket(w http.ResponseWriter, req *http.Request) {
 	l := log.WithFields(log.Fields{
@@ -38,6 +142,7 @@ func HttpUploadToBucket(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	img.Filename = "upload/" + strconv.Itoa(int(img.ID))
+	os.MkdirAll("upload", 0755)
 	fd, err := os.Create(img.Filename)
 	if err != nil {
 		bad(500, "couldn't create upload file", err)

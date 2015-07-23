@@ -6,11 +6,20 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"os"
+	"strings"
 )
 
 var configDir = "config"
 
 var db *bolt.DB
+
+var adminEmails []string
+var oauthClientID string
+
+func init() {
+	oauthClientID = os.Getenv("OAUTH_CLIENT_ID")
+	adminEmails = strings.Split(os.Getenv("ADMIN_EMAIL"), " ")
+}
 
 func getID() (int32, error) {
 	var id int32
@@ -79,6 +88,12 @@ func main() {
 	r.Methods("GET").Path("/admin/images/{id}").HandlerFunc(HttpGetImage)
 	r.Methods("DELETE").Path("/admin/images/{id}").HandlerFunc(HttpDeleteImage)
 	r.Methods("PUT").Path("/admin/images/{id}").HandlerFunc(HttpUpdateImage)
+
+	r.Methods("GET").Path("/").HandlerFunc(HttpGetGallery)
+	r.Methods("GET").Path("/admin").HandlerFunc(HttpGetAdmin)
+	r.Methods("GET").Path("/admin/logout").HandlerFunc(HttpLogout)
+	r.Methods("POST").Path("/admin/login").HandlerFunc(HttpPostLogin)
+
 	updir := http.FileServer(http.Dir("upload"))
 	r.Methods("GET").PathPrefix("/upload").Handler(http.StripPrefix("/upload/", updir))
 	http.ListenAndServe(":8000", handlers.LoggingHandler(os.Stdout, r))

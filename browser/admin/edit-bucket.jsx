@@ -391,38 +391,7 @@ class BucketEditor extends React.Component {
 			})
 		}
 	}
-	renderMainThumbnail() {
-		var img;
-		if (this.state.Thumbnail.ID === 0) {
-			img = "No image yet."
-		} else {
-			var imgStyle = {
-				width: "auto",
-				height: "auto",
-				maxHeight: 200,
-				maxWidth: 200,
-			};
-			if (!this.state.Thumbnail.Enabled) {
-				imgStyle.opacity = 0.65;
-			}
-			img = <img style={imgStyle} draggable="false" src={this.state.Thumbnail.Thumbnail.Filename}></img>
-		}
-		var style = {};
-		if (this.state.mainThumbHover) {
-			style.backgroundColor = this.state.Enabled?"#cdf":"#ddd";
-			img = "Drop to set image.";
-		}
-		return (
-			<div style={style} className="main-thumbnail"
-				onDragEnterCapture={this.mainThumbDragEnter.bind(this)}
-				onDragLeaveCapture={this.mainThumbDragLeave.bind(this)}
-				onDragOver={e=>{e.preventDefault()}}
-				onDrop={this.mainThumbDragDrop.bind(this)}
-				>
-				{img}
-			</div>
-		);
-	}
+
 
 	renderConfirmDelete() {
 		var style = this.getBucketStyle();
@@ -462,25 +431,6 @@ class BucketEditor extends React.Component {
 							</div>
 							<div className="row">
 								<Upload BucketId={this.state.ID} AddImage={this.addImage.bind(this)}/>
-							</div>
-							<div className="row">
-								<div className="box">Thumbnails</div>
-							</div>
-							<div className="row">
-									<div className="box">
-										<div className="row">
-											{this.renderMainThumbnail()}
-										</div>
-										<div className="row">
-											{thumbClear}
-										</div>
-									</div>
-									<div className="col-xs"
-											onDragStartCapture={this.thumbDragStart.bind(this)}
-											onDragEndCapture={this.thumbDragEnd.bind(this)}
-											onDropCapture={this.thumbDragEnd.bind(this)} >
-										<Sorter UpdateEnabled={this.updateEnabled.bind(this)} UpdateItems={this.updateThumbnails.bind(this)} Rows="2" Images={this.state.SmallThumbnails} />
-									</div>
 							</div>
 							<div className="row">
 								<div className="box">Images</div>

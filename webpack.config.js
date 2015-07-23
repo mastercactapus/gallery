@@ -1,8 +1,11 @@
 module.exports = {
-	entry: "./browser/main.js",
+	entry: {
+		bundle: "./browser/main.js",
+		admin: "./browser/admin/index.jsx",
+	},
 	output: {
 		path: __dirname + "/public",
-		filename: "bundle.js"
+		filename: "[name].js"
 	},
 
 	module: {
